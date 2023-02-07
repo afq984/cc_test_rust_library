@@ -1,0 +1,131 @@
+# Copyright 2023 The ChromiumOS Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_static_library", "rust_test")
+
+rust_library(
+    name = "add",
+    srcs = ["add.rs"],
+)
+
+rust_static_library(
+    name = "add_static",
+    srcs = ["add.rs"],
+)
+
+rust_test(
+    name = "add_test",
+    crate = ":add",
+)
+
+rust_library(
+    name = "sub",
+    srcs = ["sub.rs"],
+)
+
+rust_static_library(
+    name = "sub_static",
+    srcs = ["sub.rs"],
+)
+
+rust_test(
+    name = "sub_test",
+    crate = ":sub",
+)
+
+cc_library(
+    name = "mul",
+    srcs = ["mul.cc"],
+    deps = [":add"],
+)
+
+cc_library(
+    name = "mul_with_static_add",
+    srcs = ["mul.cc"],
+    deps = [":add_static"],
+)
+
+# This does not work.
+cc_test(
+    name = "mul_test",
+    srcs = ["mul_test.cc"],
+    deps = [
+        ":mul",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Workaround 1, use rust_static_library in all transitive dependencies.
+cc_test(
+    name = "mul1_test",
+    srcs = ["mul_test.cc"],
+    deps = [
+        ":mul_with_static_add",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Workaround 2, use rust_static_library to wrap deps.
+cc_test(
+    name = "mul2_test",
+    srcs = ["mul_test.cc"],
+    deps = [
+        ":mul2_test_deps",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+rust_static_library(
+    name = "mul2_test_deps",
+    srcs = ["empty.rs"],
+    deps = [
+        ":mul",
+    ],
+)
+
+# This does not work.
+cc_test(
+    name = "all_test",
+    srcs = ["all_test.cc"],
+    deps = [
+        ":add",
+        ":mul",
+        ":sub",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Workaround 1, use rust_static_library in all transitive dependencies.
+cc_test(
+    name = "all1_test",
+    srcs = ["all_test.cc"],
+    deps = [
+        ":add_static",
+        ":mul_with_static_add",
+        ":sub_static",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# Workaround 2, use rust_static_library to wrap deps.
+# This doesn't work either.
+cc_test(
+    name = "all2_test",
+    srcs = ["all_test.cc"],
+    deps = [
+        ":all2_test_deps",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+rust_static_library(
+    name = "all2_test_deps",
+    srcs = ["empty.rs"],
+    deps = [
+        ":add",
+        ":mul",
+        ":sub",
+    ],
+)
